@@ -30,6 +30,7 @@ jobs:
       run: |
         export enable_ccache=off
         curl -L https://github.com/aseprite/skia/releases/download/m124-08a5439a6b/Skia-Windows-Release-x64.zip --output Skia-Windows-Release-x64.zip
+        curl -L https://github.com/blueloveTH/aseprite/releases/download/v0.01/libcrypto-1_1-x64.dll --output libcrypto-1_1-x64.dll
         7z x Skia-Windows-Release-x64.zip
         cmake -S . -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
@@ -47,5 +48,6 @@ jobs:
       with:
         name: aseprite
         path: |
+          libcrypto-1_1-x64.dll
           D:/a/aseprite/aseprite/build/bin/data
           D:/a/aseprite/aseprite/build/bin/aseprite.exe

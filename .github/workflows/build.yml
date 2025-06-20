@@ -18,37 +18,51 @@ jobs:
       with:
         submodules: 'recursive'
     - name: ccache
-      uses: hendrikmuhs/ccache-action@v1
+      uses: HendrikMuhs/ccache-action@v1
       if: runner.os == 'Linux'
       with:
         key: ${{ matrix.os }}-${{ matrix.enable_ui }}
-    - uses: seanmiddleditch/gha-setup-ninja@master
+    - uses:SeanMiddleditch/gha-setup-ninja@master
     - uses: ilammy/msvc-dev-cmd@v1
       if: runner.os == 'Windows'
+    - name: Download dependencies
+      run: |
+        # 下载Skia预编译包
+        curl -L https://github.com/blueloveTH/aseprime/releases/download/v0.01/skia.zip --output skia.zip
+        7z x skia.zip -o./skia
+
+        # 下载libcrypto库
+        curl -L https://github.com/blueloveTH/aseprime/releases/download/v0.01/libcrypto-1_1-x64.dll --output libcrypto-1_1-x64.dll
+
+        # 下载libjpeg-turbo预编译包
+        curl -L https://sourceforge.net/projects/libjpeg-turbo/files/libjpeg-turbo-2.1.4/libjpeg-turbo-2.1.4-vc142-x64.zip/download --output libjpeg-turbo.zip
+        7z x libjpeg-turbo.zip -o./third party/externals/libjpeg-turbo
     - name: Generating Makefiles
       shell: bash
       run: |
         export enable_ccache=off
-        curl -L https://github.com/blueloveTH/aseprite/releases/download/v0.01/skia.zip --output skia.zip
-        curl -L https://github.com/blueloveTH/aseprite/releases/download/v0.01/libcrypto-1_1-x64.dll --output libcrypto-1_1-x64.dll
-        7z x skia.zip
-        cmake -S . -B build -G Ninja \
-          -DENABLE_ICU=OFF .. \
+        # 修正CMake参数顺序
+        cmake \
+          -DENABLE_ICU=OFF \
+          -DENABLE UI=ON \
+          -DLIBJPEG_TURBO_INCLUDE_DIR="${{github workflows:::GITHUB_REPOSITORY}}/third party/externals/libjpeg-turbo/include" \
+          -DLIBJPEG_TURBO_LIBRARY="${{github workflows:::GITHUB_REPOSITORY}}/third party/externals/libjpeg-turbo/lib/turbojpeg.lib" \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DENABLE_UI=${{ matrix.enable_ui }} \
+          -DENABLE UI=${{ matrix.enable_ui }} \
           -DENABLE_CCACHE=$enable_ccache \
-          -DLAF_BACKEND=skia \
+          -DLAFBackend=skia \
           -DSKIA_DIR=./skia \
           -DSKIA_LIBRARY_DIR=./skia/out/Release-x64 \
-          -DSKIA_LIBRARY=./skia/out/Release-x64/skia.lib
+          -DSKIA_LIBRARY=./skia/out/Release-x64/skia.lib \
+          -S . -B build -G Ninja
     - name: Compiling
       shell: bash
       run: |
         cd build && ninja
     - uses: actions/upload-artifact@v4
       with:
-        name: aseprite
+        name: aseprime
         path: |
           libcrypto-1_1-x64.dll
-          D:/a/aseprite/aseprite/build/bin/data
-          D:/a/aseprite/aseprite/build/bin/aseprite.exe
+          D:/a/aseprime/aseprime/build/bin/data
+          D:/a/aseprime/aseprime/build/bin/aseprime.exe

@@ -18,39 +18,41 @@ jobs:
       with:
         submodules: 'recursive'
     - name: ccache
-      uses: HendrikMuhs/ccache-action@v1
+      uses: hendrikmuhs/ccache-action@v1
       if: runner.os == 'Linux'
       with:
         key: ${{ matrix.os }}-${{ matrix.enable_ui }}
-    - uses:SeanMiddleditch/gha-setup-ninja@master
+    - uses: seanmiddleditch/gha-setup-ninja@master
     - uses: ilammy/msvc-dev-cmd@v1
       if: runner.os == 'Windows'
     - name: Download dependencies
       run: |
-        # 下载Skia预编译包
-        curl -L https://github.com/blueloveTH/aseprime/releases/download/v0.01/skia.zip --output skia.zip
+        # 下载 Skia 预编译包
+        curl -L https://github.com/blueloveTH/aseprite/releases/download/v0.01/skia.zip --output skia.zip
         7z x skia.zip -o./skia
 
-        # 下载libcrypto库
-        curl -L https://github.com/blueloveTH/aseprime/releases/download/v0.01/libcrypto-1_1-x64.dll --output libcrypto-1_1-x64.dll
+        # 下载 libcrypto DLL
+        curl -L https://github.com/blueloveTH/aseprite/releases/download/v0.01/libcrypto-1_1-x64.dll --output libcrypto-1_1-x64.dll
 
-        # 下载libjpeg-turbo预编译包
+        # 创建第三方库目录结构
+        mkdir -p third_party/externals
+
+        # 下载 libjpeg-turbo 预编译包（适用于 Windows）
         curl -L https://sourceforge.net/projects/libjpeg-turbo/files/libjpeg-turbo-2.1.4/libjpeg-turbo-2.1.4-vc142-x64.zip/download --output libjpeg-turbo.zip
-        7z x libjpeg-turbo.zip -o./third party/externals/libjpeg-turbo
+        7z x libjpeg-turbo.zip -o./third_party/externals/libjpeg-turbo
     - name: Generating Makefiles
       shell: bash
       run: |
         export enable_ccache=off
-        # 修正CMake参数顺序
+
         cmake \
           -DENABLE_ICU=OFF \
-          -DENABLE UI=ON \
-          -DLIBJPEG_TURBO_INCLUDE_DIR="${{github workflows:::GITHUB_REPOSITORY}}/third party/externals/libjpeg-turbo/include" \
-          -DLIBJPEG_TURBO_LIBRARY="${{github workflows:::GITHUB_REPOSITORY}}/third party/externals/libjpeg-turbo/lib/turbojpeg.lib" \
+          -DLIBJPEG_TURBO_INCLUDE_DIR="${{ github.workspace }}/third_party/externals/libjpeg-turbo/include" \
+          -DLIBJPEG_TURBO_LIBRARY="${{ github.workspace }}/third_party/externals/libjpeg-turbo/lib/turbojpeg.lib" \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DENABLE UI=${{ matrix.enable_ui }} \
+          -DENABLE_UI=${{ matrix.enable_ui }} \
           -DENABLE_CCACHE=$enable_ccache \
-          -DLAFBackend=skia \
+          -DLAF_BACKEND=skia \
           -DSKIA_DIR=./skia \
           -DSKIA_LIBRARY_DIR=./skia/out/Release-x64 \
           -DSKIA_LIBRARY=./skia/out/Release-x64/skia.lib \
@@ -61,8 +63,8 @@ jobs:
         cd build && ninja
     - uses: actions/upload-artifact@v4
       with:
-        name: aseprime
+        name: aseprite
         path: |
           libcrypto-1_1-x64.dll
-          D:/a/aseprime/aseprime/build/bin/data
-          D:/a/aseprime/aseprime/build/bin/aseprime.exe
+          build/bin/data
+          build/bin/aseprite.exe
